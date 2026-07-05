@@ -29,6 +29,7 @@
 #endif // ifdef RTC_DS3231
 
 #include "src/SimpleButton/SimpleButton.h"
+#include "SingleButton.h"   // ← Single Boot Button (GPIO0)
 
 using namespace simplebutton;
 
@@ -89,6 +90,7 @@ class DisplayUI {
         Button* down = NULL;
         Button* a    = NULL;
         Button* b    = NULL;
+        SingleButton bootBtn; // ← Nút Boot GPIO0 thay thế 4 nút trên
 
         // ===== adjustable ===== //
 #if defined(SSD1306_I2C)

@@ -11,7 +11,7 @@
 // #define NODEMCU
 // #define WEMOS_D1_MINI
 // #define HACKHELD_VEGA
-// #define DISPLAY_EXAMPLE_I2C
+#define DISPLAY_EXAMPLE_I2C   // ← Single Boot Button Mode: dùng NodeMCU + màn OLED I2C
 // #define DISPLAY_EXAMPLE_SPI
 
 // #define MALTRONICS
@@ -91,27 +91,27 @@
 #elif defined(DISPLAY_EXAMPLE_I2C)
 
 // ===== DISPLAY ===== //
-  #define SH1106_I2C
-// #define SSD1306_I2C
+// Chọn đúng loại màn hình của bạn (bật 1 trong 2):
+  #define SSD1306_I2C   // ← Dùng cho OLEDs thông thường (128x64 0.96")
+// #define SH1106_I2C   // ← Dùng nếu màn bạn là SH1106
 
   #define I2C_ADDR 0x3C
-  #define I2C_SDA 5
-  #define I2C_SCL 4
+  #define I2C_SDA 14     // D2 (GPIO4) → SDA
+  #define I2C_SCL 12     // D1 (GPIO5) → SCL
 
-// #define FLIP_DIPLAY true
+  #define FLIP_DIPLAY true
 
 // ===== BUTTONS ===== //
-  #define BUTTON_UP 14
-  #define BUTTON_DOWN 12
-  #define BUTTON_A 13
+// Chế độ Single Boot Button: không cần định nghĩa BUTTON_* ở đây.
+// Tất cả điều hướng qua nút Boot (GPIO0) – xử lý bởi SingleButton.h
 
 // ===== LED ===== //
-  #define LED_NEOPIXEL_GRB
-// #define LED_NEOPIXEL_RGB
-
-  #define LED_NUM 1
-  #define LED_NEOPIXEL_PIN 9
-  #define LED_MODE_BRIGHTNESS 10
+// ⚠️  GPIO9 = SPI flash pin tren NodeMCU (QSPI) -> write gay crash flash -> bootloop!
+//     Tat LED hoan toan. Neu co LED tren pin khac (khong phai 6-11), bat lai o day.
+// #define LED_NEOPIXEL_GRB      // comment -> LED_NEOPIXEL khong defined -> USE_LED false
+// #define LED_NUM 1
+// #define LED_NEOPIXEL_PIN 9    // GPIO9 NGUY HIEM tren NodeMCU QIO flash!
+  #define LED_MODE_BRIGHTNESS 10 // Giu != 0 tranh compile error
 
 
 // https://github.com/SpacehuhnTech/esp8266_deauther/wiki/Setup-Display-&-Buttons#example-setup-with-spi-oled
@@ -595,6 +595,13 @@
     #define RESET_BUTTON 255
   #endif // if BUTTON_UP != 0 && BUTTON_DOWN != 0 && BUTTON_A != 0 && BUTTON_B != 0
 #endif // ifndef RESET_BUTTON
+
+// ── Single Boot Button Mode: GPIO0 là nút điều hướng, không phải RESET ──
+// Override bất kỳ auto-assignment GPIO0 nào ở trên
+#ifdef RESET_BUTTON
+  #undef RESET_BUTTON
+#endif
+#define RESET_BUTTON 255  // Tắt reset button, dùng GPIO0 cho SingleButton
 
 // ===== Web ===== //
 #ifndef WEB_IP_ADDR

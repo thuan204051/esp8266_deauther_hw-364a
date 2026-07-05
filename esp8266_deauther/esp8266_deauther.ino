@@ -146,7 +146,7 @@ void setup() {
     // setup LED
     led::setup();
 
-    // setup reset button
+    // setup reset button (RESET_BUTTON=255 → disabled in Single Boot Button Mode)
     resetButton = new ButtonPullup(RESET_BUTTON);
 }
 
@@ -178,8 +178,10 @@ void loop() {
 #endif // ifdef HIGHLIGHT_LED
     }
 
+    // Single Boot Button Mode: RESET_BUTTON=255, resetButton update() no-ops safely.
+    // Giữ nguyên code để dễ revert nếu muốn dùng dedicated reset button sau này.
     resetButton->update();
-    if (resetButton->holding(5000)) {
+    if (RESET_BUTTON < 255 && resetButton->holding(5000)) {
         led::setMode(LED_MODE::SCAN);
         DISPLAY_MODE _mode = displayUI.mode;
         displayUI.mode = DISPLAY_MODE::RESETTING;

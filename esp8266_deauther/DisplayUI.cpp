@@ -475,10 +475,80 @@ void DisplayUI::setupLED() {
 void DisplayUI::update(bool force) {
     if (!enabled) return;
 
-    up->update();
-    down->update();
-    a->update();
-    b->update();
+    // ── Single Boot Button: đọc sự kiện từ GPIO0 ──────────────────────────
+    SingleButton::Event bEvt = bootBtn.read();
+
+    // Bất kỳ sự kiện nào: cập nhật buttonTime để giữ màn hình sáng
+    if (bEvt != SingleButton::EVENT_NONE) buttonTime = currentTime;
+
+    // Nếu màn đang tắt tạm: bất kỳ thao tác nào đều bật lại màn hình
+    if (tempOff) {
+        if (bEvt != SingleButton::EVENT_NONE) on();
+    } else {
+        // ── EVENT_DOWN (nhấn ngắn < 600ms) → Cuộn XUỐNG ──────────────────
+        if (bEvt == SingleButton::EVENT_DOWN) {
+            scrollCounter = 0;
+            scrollTime    = currentTime;
+            if (mode == DISPLAY_MODE::MENU) {
+                if (currentMenu->selected < currentMenu->list->size() - 1) currentMenu->selected++;
+                else currentMenu->selected = 0;
+            } else if (mode == DISPLAY_MODE::PACKETMONITOR) {
+                scan.setChannel(wifi_channel - 1);
+            } else if (mode == DISPLAY_MODE::CLOCK) {
+                setTime(clockHour, clockMinute - 1, clockSecond);
+            }
+        }
+
+        // ── EVENT_SELECT (giữ 600–1999ms) → CHỌN / click ─────────────────
+        if (bEvt == SingleButton::EVENT_SELECT) {
+            scrollCounter = 0;
+            scrollTime    = currentTime;
+            switch (mode) {
+                case DISPLAY_MODE::MENU:
+                    if (currentMenu->list->get(currentMenu->selected).click)
+                        currentMenu->list->get(currentMenu->selected).click();
+                    break;
+                case DISPLAY_MODE::PACKETMONITOR:
+                case DISPLAY_MODE::LOADSCAN:
+                    scan.stop();
+                    mode = DISPLAY_MODE::MENU;
+                    break;
+                case DISPLAY_MODE::CLOCK:
+                case DISPLAY_MODE::CLOCK_DISPLAY:
+                    mode = DISPLAY_MODE::MENU;
+                    display.setFont(DejaVu_Sans_Mono_12);
+                    display.setTextAlignment(TEXT_ALIGN_LEFT);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // ── EVENT_BACK (giữ >= 2000ms) → BACK / thoát ────────────────────
+        if (bEvt == SingleButton::EVENT_BACK) {
+            scrollCounter = 0;
+            scrollTime    = currentTime;
+            switch (mode) {
+                case DISPLAY_MODE::MENU:
+                    goBack();
+                    break;
+                case DISPLAY_MODE::PACKETMONITOR:
+                case DISPLAY_MODE::LOADSCAN:
+                    scan.stop();
+                    mode = DISPLAY_MODE::MENU;
+                    break;
+                case DISPLAY_MODE::CLOCK:
+                case DISPLAY_MODE::CLOCK_DISPLAY:
+                    mode = DISPLAY_MODE::MENU;
+                    display.setFont(DejaVu_Sans_Mono_12);
+                    display.setTextAlignment(TEXT_ALIGN_LEFT);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    // ──────────────────────────────────────────────────────────────────────
 
     draw(force);
 
@@ -515,148 +585,16 @@ void DisplayUI::off() {
 }
 
 void DisplayUI::setupButtons() {
-    up   = new ButtonPullup(BUTTON_UP);
-    down = new ButtonPullup(BUTTON_DOWN);
-    a    = new ButtonPullup(BUTTON_A);
-    b    = new ButtonPullup(BUTTON_B);
-
-    // === BUTTON UP === //
-    up->setOnClicked([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
-
-        if (!tempOff) {
-            if (mode == DISPLAY_MODE::MENU) {                 // when in menu, go up or down with cursor
-                if (currentMenu->selected > 0) currentMenu->selected--;
-                else currentMenu->selected = currentMenu->list->size() - 1;
-            } else if (mode == DISPLAY_MODE::PACKETMONITOR) { // when in packet monitor, change channel
-                scan.setChannel(wifi_channel + 1);
-            } else if (mode == DISPLAY_MODE::CLOCK) {         // when in clock, change time
-                setTime(clockHour, clockMinute + 1, clockSecond);
-            }
-        }
-    });
-
-    up->setOnHolding([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
-        if (!tempOff) {
-            if (mode == DISPLAY_MODE::MENU) {                 // when in menu, go up or down with cursor
-                if (currentMenu->selected > 0) currentMenu->selected--;
-                else currentMenu->selected = currentMenu->list->size() - 1;
-            } else if (mode == DISPLAY_MODE::PACKETMONITOR) { // when in packet monitor, change channel
-                scan.setChannel(wifi_channel + 1);
-            } else if (mode == DISPLAY_MODE::CLOCK) {         // when in clock, change time
-                setTime(clockHour, clockMinute + 10, clockSecond);
-            }
-        }
-    }, buttonDelay);
-
-    // === BUTTON DOWN === //
-    down->setOnClicked([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
-        if (!tempOff) {
-            if (mode == DISPLAY_MODE::MENU) {                 // when in menu, go up or down with cursor
-                if (currentMenu->selected < currentMenu->list->size() - 1) currentMenu->selected++;
-                else currentMenu->selected = 0;
-            } else if (mode == DISPLAY_MODE::PACKETMONITOR) { // when in packet monitor, change channel
-                scan.setChannel(wifi_channel - 1);
-            } else if (mode == DISPLAY_MODE::CLOCK) {         // when in clock, change time
-                setTime(clockHour, clockMinute - 1, clockSecond);
-            }
-        }
-    });
-
-    down->setOnHolding([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
-        if (!tempOff) {
-            if (mode == DISPLAY_MODE::MENU) {                 // when in menu, go up or down with cursor
-                if (currentMenu->selected < currentMenu->list->size() - 1) currentMenu->selected++;
-                else currentMenu->selected = 0;
-            } else if (mode == DISPLAY_MODE::PACKETMONITOR) { // when in packet monitor, change channel
-                scan.setChannel(wifi_channel - 1);
-            }
-
-            else if (mode == DISPLAY_MODE::CLOCK) {           // when in clock, change time
-                setTime(clockHour, clockMinute - 10, clockSecond);
-            }
-        }
-    }, buttonDelay);
-
-    // === BUTTON A === //
-    a->setOnClicked([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
-        if (!tempOff) {
-            switch (mode) {
-                case DISPLAY_MODE::MENU:
-
-                    if (currentMenu->list->get(currentMenu->selected).click) {
-                        currentMenu->list->get(currentMenu->selected).click();
-                    }
-                    break;
-
-                case DISPLAY_MODE::PACKETMONITOR:
-                case DISPLAY_MODE::LOADSCAN:
-                    scan.stop();
-                    mode = DISPLAY_MODE::MENU;
-                    break;
-
-                case DISPLAY_MODE::CLOCK:
-                case DISPLAY_MODE::CLOCK_DISPLAY:
-                    mode = DISPLAY_MODE::MENU;
-                    display.setFont(DejaVu_Sans_Mono_12);
-                    display.setTextAlignment(TEXT_ALIGN_LEFT);
-                    break;
-            }
-        }
-    });
-
-    a->setOnHolding([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
-        if (!tempOff) {
-            if (mode == DISPLAY_MODE::MENU) {
-                if (currentMenu->list->get(currentMenu->selected).hold) {
-                    currentMenu->list->get(currentMenu->selected).hold();
-                }
-            }
-        }
-    }, 800);
-
-    // === BUTTON B === //
-    b->setOnClicked([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
-        if (!tempOff) {
-            switch (mode) {
-                case DISPLAY_MODE::MENU:
-                    goBack();
-                    break;
-
-                case DISPLAY_MODE::PACKETMONITOR:
-                case DISPLAY_MODE::LOADSCAN:
-                    scan.stop();
-                    mode = DISPLAY_MODE::MENU;
-                    break;
-
-                case DISPLAY_MODE::CLOCK:
-                    mode = DISPLAY_MODE::MENU;
-                    display.setFont(DejaVu_Sans_Mono_12);
-                    display.setTextAlignment(TEXT_ALIGN_LEFT);
-                    break;
-            }
-        }
-    });
+    // ════════════════════════════════════════════════════════
+    //  SINGLE BOOT BUTTON MODE
+    //  Nút Boot (GPIO0, active-LOW) thay thế 4 nút UP/DOWN/A/B.
+    //  Logic điều hướng đã chuyển sang hàm update() ở trên.
+    // ════════════════════════════════════════════════════════
+    bootBtn.begin();    // Khởi tạo GPIO0 với INPUT_PULLUP
+    up   = nullptr;     // Không dùng SimpleButton objects nữa
+    down = nullptr;
+    a    = nullptr;
+    b    = nullptr;
 }
 
 String DisplayUI::getChannel() {
@@ -722,10 +660,16 @@ void DisplayUI::draw(bool force) {
 }
 
 void DisplayUI::drawButtonTest() {
-    drawString(0, str(D_UP) + b2s(up->read()));
-    drawString(1, str(D_DOWN) + b2s(down->read()));
-    drawString(2, str(D_A) + b2s(a->read()));
-    drawString(3, str(D_B) + b2s(b->read()));
+    // Single Boot Button Mode: hiển thị trạng thái nút Boot (GPIO0)
+    bool pressed     = bootBtn.isHeld();
+    unsigned long ms = bootBtn.heldDuration();
+    drawString(0, String("Boot GPIO0: ") + (pressed ? "HELD" : "open"));
+    drawString(1, String("Held: ") + String(ms) + String("ms"));
+    if (!pressed)    drawString(2, "Action: --");
+    else if (ms < 600)  drawString(2, "Action: DOWN");
+    else if (ms < 2000) drawString(2, "Action: SELECT");
+    else                drawString(2, "Action: BACK");
+    drawString(3, "[ single btn mode ]");
 }
 
 void DisplayUI::drawMenu() {
