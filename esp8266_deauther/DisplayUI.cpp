@@ -80,20 +80,20 @@ void DisplayUI::setup() {
 
     // MAIN MENU
     createMenu(&mainMenu, NULL, [this]() {
-        addMenuNode(&mainMenu, D_SCAN, &scanMenu);          /// SCAN
-        addMenuNode(&mainMenu, D_SHOW, &showMenu);          // SHOW
-        addMenuNode(&mainMenu, D_ATTACK, &attackMenu);      // ATTACK
-        addMenuNode(&mainMenu, D_PACKET_MONITOR, [this]() { // PACKET MONITOR
+        addMenuNode(&mainMenu, D_SCAN, &scanMenu, ICON_scan);       /// SCAN
+        addMenuNode(&mainMenu, D_SHOW, &showMenu, ICON_show);       // SHOW
+        addMenuNode(&mainMenu, D_ATTACK, &attackMenu, ICON_attack); // ATTACK
+        addMenuNode(&mainMenu, D_PACKET_MONITOR, [this]() {         // PACKET MONITOR
             scan.start(SCAN_MODE_SNIFFER, 0, SCAN_MODE_OFF, 0, false, wifi_channel);
             mode = DISPLAY_MODE::PACKETMONITOR;
-        });
-        addMenuNode(&mainMenu, D_CLOCK, &clockMenu); // CLOCK
+        }, ICON_packet);
+        addMenuNode(&mainMenu, D_CLOCK, &clockMenu, ICON_clock); // CLOCK
 
 #ifdef HIGHLIGHT_LED
         addMenuNode(&mainMenu, D_LED, [this]() {     // LED
             highlightLED = !highlightLED;
             digitalWrite(HIGHLIGHT_LED, highlightLED);
-        });
+        }, ICON_led);
 #endif // ifdef HIGHLIGHT_LED
     });
 
@@ -102,31 +102,31 @@ void DisplayUI::setup() {
         addMenuNode(&scanMenu, D_SCAN_APST, [this]() { // SCAN AP + ST
             scan.start(SCAN_MODE_ALL, 15000, SCAN_MODE_OFF, 0, true, wifi_channel);
             mode = DISPLAY_MODE::LOADSCAN;
-        });
+        }, ICON_scan);
         addMenuNode(&scanMenu, D_SCAN_AP, [this]() { // SCAN AP
             scan.start(SCAN_MODE_APS, 0, SCAN_MODE_OFF, 0, true, wifi_channel);
             mode = DISPLAY_MODE::LOADSCAN;
-        });
+        }, ICON_ap);
         addMenuNode(&scanMenu, D_SCAN_ST, [this]() { // SCAN ST
             scan.start(SCAN_MODE_STATIONS, 30000, SCAN_MODE_OFF, 0, true, wifi_channel);
             mode = DISPLAY_MODE::LOADSCAN;
-        });
+        }, ICON_station);
     });
 
     // SHOW MENU
     createMenu(&showMenu, &mainMenu, [this]() {
         addMenuNode(&showMenu, [this]() { // Accesspoints 0 [0]
-            return leftRight(str(D_ACCESSPOINTS), (String)accesspoints.count(), maxLen - 1);
-        }, &apListMenu);
+            return leftRight(str(D_ACCESSPOINTS), (String)accesspoints.count(), maxLen - 4);
+        }, &apListMenu, ICON_ap);
         addMenuNode(&showMenu, [this]() { // Stations 0 [0]
-            return leftRight(str(D_STATIONS), (String)stations.count(), maxLen - 1);
-        }, &stationListMenu);
+            return leftRight(str(D_STATIONS), (String)stations.count(), maxLen - 4);
+        }, &stationListMenu, ICON_station);
         addMenuNode(&showMenu, [this]() { // Names 0 [0]
-            return leftRight(str(D_NAMES), (String)names.count(), maxLen - 1);
-        }, &nameListMenu);
+            return leftRight(str(D_NAMES), (String)names.count(), maxLen - 4);
+        }, &nameListMenu, ICON_name);
         addMenuNode(&showMenu, [this]() { // SSIDs 0
-            return leftRight(str(D_SSIDS), (String)ssids.count(), maxLen - 1);
-        }, &ssidListMenu);
+            return leftRight(str(D_SSIDS), (String)ssids.count(), maxLen - 4);
+        }, &ssidListMenu, ICON_ssid);
     });
 
     // AP LIST MENU
@@ -395,8 +395,8 @@ void DisplayUI::setup() {
         addMenuNode(&attackMenu, [this]() { // *DEAUTH 0/0
             if (attack.isRunning()) return leftRight(b2a(deauthSelected) + str(D_DEAUTH),
                                                      (String)attack.getDeauthPkts() + SLASH +
-                                                     (String)attack.getDeauthMaxPkts(), maxLen - 1);
-            else return leftRight(b2a(deauthSelected) + str(D_DEAUTH), (String)scan.countSelected(), maxLen - 1);
+                                                     (String)attack.getDeauthMaxPkts(), maxLen - 4);
+            else return leftRight(b2a(deauthSelected) + str(D_DEAUTH), (String)scan.countSelected(), maxLen - 4);
         }, [this]() { // deauth
             deauthSelected = !deauthSelected;
 
@@ -404,12 +404,12 @@ void DisplayUI::setup() {
                 attack.start(beaconSelected, deauthSelected, false, probeSelected, true,
                              settings::getAttackSettings().timeout * 1000);
             }
-        });
+        }, ICON_deauth);
         addMenuNode(&attackMenu, [this]() { // *BEACON 0/0
             if (attack.isRunning()) return leftRight(b2a(beaconSelected) + str(D_BEACON),
                                                      (String)attack.getBeaconPkts() + SLASH +
-                                                     (String)attack.getBeaconMaxPkts(), maxLen - 1);
-            else return leftRight(b2a(beaconSelected) + str(D_BEACON), (String)ssids.count(), maxLen - 1);
+                                                     (String)attack.getBeaconMaxPkts(), maxLen - 4);
+            else return leftRight(b2a(beaconSelected) + str(D_BEACON), (String)ssids.count(), maxLen - 4);
         }, [this]() { // beacon
             beaconSelected = !beaconSelected;
 
@@ -417,12 +417,12 @@ void DisplayUI::setup() {
                 attack.start(beaconSelected, deauthSelected, false, probeSelected, true,
                              settings::getAttackSettings().timeout * 1000);
             }
-        });
+        }, ICON_beacon);
         addMenuNode(&attackMenu, [this]() { // *PROBE 0/0
             if (attack.isRunning()) return leftRight(b2a(probeSelected) + str(D_PROBE),
                                                      (String)attack.getProbePkts() + SLASH +
-                                                     (String)attack.getProbeMaxPkts(), maxLen - 1);
-            else return leftRight(b2a(probeSelected) + str(D_PROBE), (String)ssids.count(), maxLen - 1);
+                                                     (String)attack.getProbeMaxPkts(), maxLen - 4);
+            else return leftRight(b2a(probeSelected) + str(D_PROBE), (String)ssids.count(), maxLen - 4);
         }, [this]() { // probe
             probeSelected = !probeSelected;
 
@@ -430,15 +430,15 @@ void DisplayUI::setup() {
                 attack.start(beaconSelected, deauthSelected, false, probeSelected, true,
                              settings::getAttackSettings().timeout * 1000);
             }
-        });
+        }, ICON_probe);
         addMenuNode(&attackMenu, [this]() { // START
             return leftRight(str(attack.isRunning() ? D_STOP_ATTACK : D_START_ATTACK),
-                             attack.getPacketRate() > 0 ? (String)attack.getPacketRate() : String(), maxLen - 1);
+                             attack.getPacketRate() > 0 ? (String)attack.getPacketRate() : String(), maxLen - 4);
         }, [this]() {
             if (attack.isRunning()) attack.stop();
             else attack.start(beaconSelected, deauthSelected, false, probeSelected, true,
                               settings::getAttackSettings().timeout * 1000);
-        });
+        }, attack.isRunning() ? ICON_stop : ICON_start);
     });
 
     // CLOCK MENU
@@ -447,15 +447,22 @@ void DisplayUI::setup() {
             mode = DISPLAY_MODE::CLOCK_DISPLAY;
             display.setFont(ArialMT_Plain_24);
             display.setTextAlignment(TEXT_ALIGN_CENTER);
-        });
+        }, ICON_clock);
         addMenuNode(&clockMenu, D_CLOCK_SET, [this]() { // CLOCK SET TIME
             mode = DISPLAY_MODE::CLOCK;
             display.setFont(ArialMT_Plain_24);
             display.setTextAlignment(TEXT_ALIGN_CENTER);
-        });
+        }, ICON_gear);
     });
 
     // ===================== //
+
+    // enable big-icon carousel view for the main navigation menus
+    mainMenu.iconView   = true;
+    scanMenu.iconView   = true;
+    attackMenu.iconView = true;
+    clockMenu.iconView  = true;
+    showMenu.iconView   = true;
 
     // set current menu to main menu
     changeMenu(&mainMenu);
@@ -490,8 +497,15 @@ void DisplayUI::update(bool force) {
             scrollCounter = 0;
             scrollTime    = currentTime;
             if (mode == DISPLAY_MODE::MENU) {
+                uint8_t oldSel = currentMenu->selected;
                 if (currentMenu->selected < currentMenu->list->size() - 1) currentMenu->selected++;
                 else currentMenu->selected = 0;
+                // trigger slide transition for big-icon carousel menus
+                if (currentMenu->iconView && (oldSel != currentMenu->selected)) {
+                    iconPrevSel    = oldSel;
+                    iconSlideDir   = 1;
+                    iconSlideStart = currentTime;
+                }
             } else if (mode == DISPLAY_MODE::PACKETMONITOR) {
                 scan.setChannel(wifi_channel - 1);
             } else if (mode == DISPLAY_MODE::CLOCK) {
@@ -550,7 +564,9 @@ void DisplayUI::update(bool force) {
     }
     // ──────────────────────────────────────────────────────────────────────
 
-    draw(force);
+    // force continuous redraws while a carousel slide animation is running
+    bool animating = (iconSlideDir != 0) && (mode == DISPLAY_MODE::MENU);
+    draw(force || animating);
 
     uint32_t timeout = settings::getDisplaySettings().timeout * 1000;
 
@@ -673,6 +689,8 @@ void DisplayUI::drawButtonTest() {
 }
 
 void DisplayUI::drawMenu() {
+    if (currentMenu->iconView) { drawMenuIcon(); return; }
+
     String tmp;
     int    tmpLen;
     int    row = (currentMenu->selected / 5) * 5;
@@ -683,13 +701,20 @@ void DisplayUI::drawMenu() {
 
     // draw menu entries
     for (int i = row; i < currentMenu->list->size() && i < row + 5; i++) {
-        tmp    = currentMenu->list->get(i).getStr();
+        MenuNode node    = currentMenu->list->get(i);
+        bool     hasIcon = (node.icon != NULL);
+        bool     sel      = (currentMenu->selected == i);
+        int      y        = (i - row) * 12;
+        int      textX    = hasIcon ? 15 : 2;
+        uint8_t  lineMax  = hasIcon ? 16 : maxLen;
+
+        tmp    = node.getStr();
         tmpLen = tmp.length();
 
-        // horizontal scrolling
-        if ((currentMenu->selected == i) && (tmpLen >= maxLen)) {
+        // horizontal scrolling (only for the selected, overflowing entry)
+        if (sel && (tmpLen >= lineMax)) {
             tmp = tmp + tmp;
-            tmp = tmp.substring(scrollCounter, scrollCounter + maxLen - 1);
+            tmp = tmp.substring(scrollCounter, scrollCounter + lineMax - 1);
 
             if (((scrollCounter > 0) && (scrollTime < currentTime - scrollSpeed)) || ((scrollCounter == 0) && (scrollTime < currentTime - scrollSpeed * 4))) {
                 scrollTime = currentTime;
@@ -699,9 +724,111 @@ void DisplayUI::drawMenu() {
             if (scrollCounter > tmpLen) scrollCounter = 0;
         }
 
-        tmp = (currentMenu->selected == i ? CURSOR : SPACE) + tmp;
-        drawString(0, (i - row) * 12, tmp);
+        // selection highlight bar
+        if (sel) {
+            display.setColor(WHITE);
+            display.fillRect(0, y, screenWidth, 12);
+            display.setColor(BLACK);
+        }
+
+        // per-item icon
+        if (hasIcon) display.drawXbm(1, y, ICON_W, ICON_H, node.icon);
+
+        // label
+        drawString(textX, y, tmp);
+
+        // restore default draw color
+        if (sel) display.setColor(WHITE);
     }
+}
+
+// ===== big-icon carousel: one menu item per screen ===== //
+void DisplayUI::drawIconScaled(int x, int y, const uint8_t* xbm, uint8_t scale) {
+    int widthInXbm = (ICON_W + 7) / 8; // bytes per row (=2 for 12px)
+    for (int row = 0; row < ICON_H; row++) {
+        for (int col = 0; col < ICON_W; col++) {
+            uint8_t b = pgm_read_byte(xbm + (col / 8) + row * widthInXbm);
+            if (b & (1 << (col & 7))) {
+                display.fillRect(x + col * scale, y + row * scale, scale, scale);
+            }
+        }
+    }
+}
+
+void DisplayUI::drawMenuIcon() {
+    int total = currentMenu->list->size();
+
+    if (total == 0) return;
+    if (currentMenu->selected < 0) currentMenu->selected = 0;
+    else if (currentMenu->selected >= total) currentMenu->selected = total - 1;
+
+    int      sel  = currentMenu->selected;
+    MenuNode node = currentMenu->list->get(sel);
+
+    display.setColor(WHITE);
+
+    const int iy      = 2;
+    const int centerX = (screenWidth - ICON_W) / 2; // 48 for 32px icon
+
+    // --- big 32x32 icon with horizontal slide transition ---
+    uint32_t elapsed = currentTime - iconSlideStart;
+    if ((iconSlideDir != 0) && (elapsed < iconSlideDur) && (iconPrevSel < total)) {
+        int prog  = (int)(elapsed * screenWidth / iconSlideDur); // 0..128
+        int newX  = centerX + iconSlideDir * (screenWidth - prog);
+        int prevX = newX - iconSlideDir * screenWidth;
+        MenuNode prevNode = currentMenu->list->get(iconPrevSel);
+        if (prevNode.icon) display.drawXbm(prevX, iy, ICON_W, ICON_H, prevNode.icon);
+        if (node.icon)     display.drawXbm(newX,  iy, ICON_W, ICON_H, node.icon);
+    } else {
+        iconSlideDir = 0;
+        if (node.icon) display.drawXbm(centerX, iy, ICON_W, ICON_H, node.icon);
+    }
+
+    // --- left/right navigation chevrons ---
+    display.setFont(DejaVu_Sans_Mono_12);
+    if (total > 1) {
+        int chY = iy + ICON_H / 2 - 8;
+        display.setTextAlignment(TEXT_ALIGN_LEFT);
+        display.drawString(0, chY, "<");
+        display.setTextAlignment(TEXT_ALIGN_RIGHT);
+        display.drawString(screenWidth, chY, ">");
+    }
+
+    // --- label under the icon ---
+    String label  = node.getStr();
+    int    labelY = iy + ICON_H + 4; // ~38
+    if ((int)label.length() <= maxLen) {
+        display.setTextAlignment(TEXT_ALIGN_CENTER);
+        display.drawString(screenWidth / 2, labelY, replaceUtf8(label, String(QUESTIONMARK)));
+    } else {
+        String txt = label + "   " + label;
+        txt = txt.substring(scrollCounter, scrollCounter + maxLen);
+        if (((scrollCounter > 0) && (scrollTime < currentTime - scrollSpeed)) ||
+            ((scrollCounter == 0) && (scrollTime < currentTime - scrollSpeed * 4))) {
+            scrollTime = currentTime;
+            scrollCounter++;
+        }
+        if (scrollCounter > (int)label.length() + 3) scrollCounter = 0;
+        display.setTextAlignment(TEXT_ALIGN_LEFT);
+        display.drawString(0, labelY, replaceUtf8(txt, String(QUESTIONMARK)));
+    }
+
+    // --- position indicator (dots or n/total) at the bottom ---
+    display.setTextAlignment(TEXT_ALIGN_LEFT);
+    if (total <= 9) {
+        const int gap = 7;
+        int startX    = screenWidth / 2 - ((total - 1) * gap) / 2;
+        int dy        = 60;
+        for (int i = 0; i < total; i++) {
+            if (i == sel) display.fillCircle(startX + i * gap, dy, 2);
+            else display.drawCircle(startX + i * gap, dy, 1);
+        }
+    } else {
+        display.setTextAlignment(TEXT_ALIGN_CENTER);
+        display.drawString(screenWidth / 2, 54, String(sel + 1) + "/" + String(total));
+    }
+
+    display.setTextAlignment(TEXT_ALIGN_LEFT);
 }
 
 void DisplayUI::drawLoadingScan() {
@@ -749,16 +876,36 @@ void DisplayUI::drawPacketMonitor() {
 }
 
 void DisplayUI::drawIntro() {
-    drawString(0, center(str(D_INTRO_0), maxLen));
-    drawString(1, center(str(D_INTRO_1), maxLen));
-    drawString(2, center(str(D_INTRO_2), maxLen));
-    drawString(3, center(DEAUTHER_VERSION, maxLen));
-    if (scan.isScanning()) {
-        if (currentTime - startTime >= screenIntroTime+4500) drawString(4, left(str(D_SCANNING_3), maxLen));
-        else if (currentTime - startTime >= screenIntroTime+3000) drawString(4, left(str(D_SCANNING_2), maxLen));
-        else if (currentTime - startTime >= screenIntroTime+1500) drawString(4, left(str(D_SCANNING_1), maxLen));
-        else if (currentTime - startTime >= screenIntroTime) drawString(4, left(str(D_SCANNING_0), maxLen));
+    // ===== Animated boot sequence ===== //
+    uint32_t t     = currentTime - startTime; // elapsed time since boot (ms)
+    int      cx    = screenWidth / 2;         // horizontal center
+    int      cy    = 22;                        // broadcast center (lowered so rings fit)
+
+    display.setColor(WHITE);
+
+    // --- pulsing WiFi broadcast animation (base dot + expanding arcs) ---
+    display.fillCircle(cx, cy, 2);
+    uint8_t arcs = (t / 200) % 4; // 0..3 pulsing rings
+    for (uint8_t k = 1; k <= arcs; k++) {
+        // upper two quadrants only; max radius 18 stays fully on-screen (22-18=4)
+        display.drawCircleQuads(cx, cy, k * 6, 0b00000011);
     }
+
+    // --- title: slides in from the left during the first 500 ms ---
+    int slide = 0;
+    if (t < 500) slide = -(int)((500 - t) * screenWidth / 500);
+
+    display.setFont(DejaVu_Sans_Mono_12);
+    display.setTextAlignment(TEXT_ALIGN_CENTER);
+    display.drawString(cx + slide, 30, replaceUtf8(str(D_INTRO_0), String(QUESTIONMARK))); // ESP8266 Deauther
+    if (t > 600)  display.drawString(cx, 42, replaceUtf8(str(D_INTRO_1), String(QUESTIONMARK))); // by @Spacehuhn
+
+    // reset alignment/font so the menu (drawn next) renders correctly
+    display.setTextAlignment(TEXT_ALIGN_LEFT);
+
+    // --- bottom loading bar tracks boot progress ---
+    uint8_t progress = (t >= screenIntroTime) ? 100 : (uint8_t)(t * 100 / screenIntroTime);
+    display.drawProgressBar(4, 56, screenWidth - 8, 6, progress);
 }
 
 void DisplayUI::drawClock() {
@@ -815,33 +962,58 @@ void DisplayUI::createMenu(Menu* menu, Menu* parent, std::function<void()>build)
     menu->parentMenu = parent;
     menu->selected   = 0;
     menu->build      = build;
+    menu->iconView   = false;
 }
 
+// ===== core: full signature with icon ===== //
+void DisplayUI::addMenuNode(Menu* menu, std::function<String()>getStr, std::function<void()>click,
+                            std::function<void()>hold, const uint8_t* icon) {
+    menu->list->add(MenuNode{ getStr, click, hold, icon });
+}
+
+// ===== original signatures (no icon) ===== //
 void DisplayUI::addMenuNode(Menu* menu, std::function<String()>getStr, std::function<void()>click,
                             std::function<void()>hold) {
-    menu->list->add(MenuNode{ getStr, click, hold });
+    addMenuNode(menu, getStr, click, hold, (const uint8_t*)NULL);
 }
 
 void DisplayUI::addMenuNode(Menu* menu, std::function<String()>getStr, std::function<void()>click) {
-    addMenuNode(menu, getStr, click, NULL);
+    addMenuNode(menu, getStr, click, NULL, (const uint8_t*)NULL);
 }
 
 void DisplayUI::addMenuNode(Menu* menu, std::function<String()>getStr, Menu* next) {
-    addMenuNode(menu, getStr, [this, next]() {
-        changeMenu(next);
-    });
+    addMenuNode(menu, getStr, next, (const uint8_t*)NULL);
 }
 
 void DisplayUI::addMenuNode(Menu* menu, const char* ptr, std::function<void()>click) {
-    addMenuNode(menu, [ptr]() {
-        return str(ptr);
-    }, click);
+    addMenuNode(menu, ptr, click, (const uint8_t*)NULL);
 }
 
 void DisplayUI::addMenuNode(Menu* menu, const char* ptr, Menu* next) {
+    addMenuNode(menu, ptr, next, (const uint8_t*)NULL);
+}
+
+// ===== icon-carrying variants ===== //
+void DisplayUI::addMenuNode(Menu* menu, std::function<String()>getStr, std::function<void()>click, const uint8_t* icon) {
+    addMenuNode(menu, getStr, click, NULL, icon);
+}
+
+void DisplayUI::addMenuNode(Menu* menu, std::function<String()>getStr, Menu* next, const uint8_t* icon) {
+    addMenuNode(menu, getStr, [this, next]() {
+        changeMenu(next);
+    }, NULL, icon);
+}
+
+void DisplayUI::addMenuNode(Menu* menu, const char* ptr, std::function<void()>click, const uint8_t* icon) {
     addMenuNode(menu, [ptr]() {
         return str(ptr);
-    }, next);
+    }, click, NULL, icon);
+}
+
+void DisplayUI::addMenuNode(Menu* menu, const char* ptr, Menu* next, const uint8_t* icon) {
+    addMenuNode(menu, [ptr]() {
+        return str(ptr);
+    }, next, icon);
 }
 
 void DisplayUI::setTime(int h, int m, int s) {

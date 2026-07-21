@@ -30,6 +30,7 @@
 
 #include "src/SimpleButton/SimpleButton.h"
 #include "SingleButton.h"   // ← Single Boot Button (GPIO0)
+#include "MenuIcons.h"      // ← 12x12 XBM icons for menu items
 
 using namespace simplebutton;
 
@@ -62,6 +63,7 @@ struct MenuNode {
     std::function<String()>getStr; // function used to create the displayed string
     std::function<void()>  click;  // function that is executed when node is clicked
     std::function<void()>  hold;   // function that is executed when node is pressed for > 800ms
+    const uint8_t        * icon;   // optional 12x12 XBM icon (NULL = no icon)
 };
 
 struct Menu {
@@ -69,6 +71,7 @@ struct Menu {
     Menu                * parentMenu;
     uint8_t               selected;
     std::function<void()> build; // function that is executed when button is clicked
+    bool                  iconView; // true = show one big-icon item per screen (carousel)
 };
 
 enum class DISPLAY_MODE { OFF,
@@ -108,7 +111,7 @@ class DisplayUI {
         const uint8_t buttonDelay      = 250;
         const uint8_t drawInterval     = 100; // 100ms = 10 FPS
         const uint16_t scrollSpeed     = 500; // time interval in ms
-        const uint16_t screenIntroTime = 2500;
+        const uint16_t screenIntroTime = 3200; // boot animation duration
         const uint16_t screenWidth     = 128;
         const uint16_t sreenHeight     = 64;
 
@@ -137,6 +140,12 @@ class DisplayUI {
     private:
         int16_t selectedID    = 0; // i.e. access point ID to draw the apMenu
         uint8_t scrollCounter = 0; // for horizontal scrolling
+
+        // ----- big-icon carousel slide transition -----
+        int8_t  iconSlideDir  = 0;   // 0 = idle, +1/-1 = sliding direction
+        uint32_t iconSlideStart = 0; // when the slide started
+        int16_t iconPrevSel   = 0;   // previously selected index (icon sliding out)
+        const uint16_t iconSlideDur = 180; // slide duration (ms)
 
         uint32_t scrollTime = 0;   // last time a character was moved
         uint32_t drawTime   = 0;   // last time a frame was drawn
@@ -179,6 +188,8 @@ class DisplayUI {
         void draw(bool force = false);
         void drawButtonTest();
         void drawMenu();
+        void drawMenuIcon();  // big-icon carousel view (one item per screen)
+        void drawIconScaled(int x, int y, const uint8_t* xbm, uint8_t scale); // scaled XBM blit
         void drawLoadingScan();
         void drawPacketMonitor();
         void drawIntro();
@@ -190,11 +201,17 @@ class DisplayUI {
         void goBack();
         void createMenu(Menu* menu, Menu* parent, std::function<void()>build);
 
+        void addMenuNode(Menu* menu, std::function<String()>getStr, std::function<void()>click, std::function<void()>hold, const uint8_t* icon);
         void addMenuNode(Menu* menu, std::function<String()>getStr, std::function<void()>click, std::function<void()>hold);
         void addMenuNode(Menu* menu, std::function<String()>getStr, std::function<void()>click);
         void addMenuNode(Menu* menu, std::function<String()>getStr, Menu* next);
         void addMenuNode(Menu* menu, const char* ptr, std::function<void()>click);
         void addMenuNode(Menu* menu, const char* ptr, Menu* next);
+        // icon-carrying variants
+        void addMenuNode(Menu* menu, std::function<String()>getStr, std::function<void()>click, const uint8_t* icon);
+        void addMenuNode(Menu* menu, std::function<String()>getStr, Menu* next, const uint8_t* icon);
+        void addMenuNode(Menu* menu, const char* ptr, std::function<void()>click, const uint8_t* icon);
+        void addMenuNode(Menu* menu, const char* ptr, Menu* next, const uint8_t* icon);
 
         // fake clock
         void drawClock();
